@@ -65,7 +65,6 @@ Para conectar à API real:
    USE_REAL_API=true
    ```
 
-Durante o desenvolvimento, se a API não estiver disponível e `USE_REAL_API` não estiver definido como `true`, o sistema utilizará dados mockados para testes.
 
 ### Proxy e CORS
 
@@ -173,16 +172,6 @@ O sistema de notificações permite manter os usuários informados sobre eventos
 - **Página dedicada**: Visualização completa de todas as notificações com filtros e busca
 - **Atualização automática**: Verificação periódica de novas notificações a cada 2 minutos
 
-### Componentes principais
-- `notification-context.tsx`: Contexto React para gerenciar o estado das notificações
-- `notification-dropdown.tsx`: Dropdown no header para visualização rápida de notificações
-- `app/notificacoes/page.tsx`: Página completa para gerenciamento de notificações
-
-### Integração com API
-- `getNotificacoes()`: Busca todas as notificações do usuário
-- `marcarNotificacaoComoLida(id)`: Marca uma notificação específica como lida
-- `marcarTodasNotificacoesComoLidas()`: Marca todas as notificações como lidas
-- `excluirNotificacao(id)`: Remove uma notificação do sistema
 
 ## Layout do Sistema
 
@@ -223,12 +212,7 @@ O sistema utiliza um layout responsivo com:
    - Visualização mensal/semanal
    - Filtros por tipo de evento e status
 
-5. **Notificações**: Sistema de alertas e informações
-   - Notificações em tempo real
-   - Diferentes tipos e níveis de prioridade
-   - Ações rápidas e página de gerenciamento
-
-6. **Relatórios**: Geração de relatórios diversos
+5. **Relatórios**: Geração de relatórios diversos
    - Relatório de integridade de dados
    - Relatório de férias disponíveis
    - Relatório de eventos por status
