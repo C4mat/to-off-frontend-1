@@ -1,12 +1,4 @@
-Gemini eu preciso que você faça um prompt pra mim  pedindo para a IA refazer todo o codigo do front end para que se conecte na API
-conforme informações nos endpoints abaixo detalhando a função deles
-
-- informe que preciso que tenha um side bar para selecionar as opções
-- informe que preciso que tenha OS SISTEMA DE PERMISSÕES CONFORME ABAIXO
-- Especifique todas funções que o front deve ter seguindo os endpoints da API 
-
-- siga as cores do projeto original
- --- FUNÇÕES DOS ENDPOINTS DA API ---
+  --- FUNÇÕES DOS ENDPOINTS DA API ---
 1. 🔐 AUTENTICAÇÃO
 Método	Endpoint	Função
 POST	/api/auth/login	Autentica o usuário e retorna access/refresh token e dados (com CPF).
