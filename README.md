@@ -154,18 +154,6 @@ Os níveis de acesso são:
 - **Gestor**: Pode aprovar eventos de seus subordinados
 - **Comum**: Pode criar e visualizar seus próprios eventos
 
-## Sistema de Notificações
-
-O sistema de notificações permite manter os usuários informados sobre eventos importantes:
-
-### Funcionalidades
-- **Notificações em tempo real**: Exibição de notificações no header com contador de não lidas
-- **Tipos de notificações**: Suporte para diferentes tipos (info, warning, error, success) com ícones distintos
-- **Ações rápidas**: Marcar como lida, excluir, navegar para links relacionados
-- **Página dedicada**: Visualização completa de todas as notificações com filtros e busca
-- **Atualização automática**: Verificação periódica de novas notificações a cada 2 minutos
-
-
 ## Layout do Sistema
 
 O sistema utiliza um layout responsivo com:
