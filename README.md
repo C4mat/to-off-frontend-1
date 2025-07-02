@@ -109,13 +109,6 @@ Para modificar estas configurações, edite o arquivo `next.config.mjs`.
 - Implementação de relatório de eventos com filtros por status
 - Adição de funcionalidades de exportação de dados e filtros de busca
 
-### Implementação do Sistema de Notificações
-- Criação de interface `Notificacao` e métodos de API para gerenciar notificações
-- Desenvolvimento do contexto `NotificationContext` para gerenciar o estado das notificações
-- Implementação do componente `NotificationDropdown` para exibição de notificações no header
-- Criação da página `/notificacoes` para visualização e gerenciamento de todas as notificações
-- Adição de funcionalidades como marcar como lida, excluir e filtrar notificações
-- Integração com o sistema de navegação e layout principal da aplicação
 
 ## Estrutura do Projeto
 
