@@ -11,12 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Menu, Search, Bell, User, LogOut, Settings } from "lucide-react"
+import { Menu, Search, User, LogOut, Settings } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useSidebar } from "@/hooks/use-sidebar"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { NotificationDropdown } from "./notification-dropdown"
 import { ReactNode } from "react"
 
 interface HeaderProps {
@@ -79,9 +78,6 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
           </div>
         )}
         
-        {/* Notifications */}
-        <NotificationDropdown />
-
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

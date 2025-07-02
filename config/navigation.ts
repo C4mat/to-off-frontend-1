@@ -15,7 +15,6 @@ import {
   Shield,
   User,
   UserPlus,
-  Bell,
 } from "lucide-react"
 import type { NavigationSection } from "@/types/navigation"
 
@@ -53,11 +52,6 @@ export const navigationConfig: NavigationSection[] = [
         href: "/aprovacoes",
         icon: UserCheck,
         requireGestor: true,
-      },
-      {
-        name: "Notificações",
-        href: "/notificacoes",
-        icon: Bell,
       },
     ],
   },

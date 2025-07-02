@@ -176,17 +176,6 @@ export interface DiasFerias {
   ultimo_periodo_aquisitivo_fim: string
 }
 
-export interface Notificacao {
-  id: number
-  usuario_cpf: number
-  titulo: string
-  mensagem: string
-  tipo: 'info' | 'warning' | 'error' | 'success'
-  lida: boolean
-  data_criacao: string
-  link?: string
-}
-
 class ApiClient {
   private baseURL: string
   private accessToken: string | null = null
@@ -508,28 +497,6 @@ class ApiClient {
 
   async getDiasFerias(cpf: number): Promise<ApiResponse<DiasFerias>> {
     return this.request<DiasFerias>(`/api/ferias/disponivel/${cpf}`)
-  }
-
-  async getNotificacoes(): Promise<ApiResponse<Notificacao[]>> {
-    return this.request<Notificacao[]>("/api/notificacoes")
-  }
-
-  async marcarNotificacaoComoLida(id: number): Promise<ApiResponse<{ status: string }>> {
-    return this.request<{ status: string }>(`/api/notificacoes/${id}/lida`, {
-      method: "PUT",
-    })
-  }
-
-  async marcarTodasNotificacoesComoLidas(): Promise<ApiResponse<{ status: string }>> {
-    return this.request<{ status: string }>("/api/notificacoes/lidas", {
-      method: "PUT",
-    })
-  }
-
-  async excluirNotificacao(id: number): Promise<ApiResponse<{ status: string }>> {
-    return this.request<{ status: string }>(`/api/notificacoes/${id}`, {
-      method: "DELETE",
-    })
   }
 
   private useMockData(endpoint: string): boolean {
@@ -1068,64 +1035,7 @@ class ApiClient {
       }
     }
 
-    if (endpoint === "/api/notificacoes") {
-      return {
-        data: [
-          {
-            id: 1,
-            usuario_cpf: 12345678900,
-            titulo: "Evento aprovado",
-            mensagem: "Seu evento de férias foi aprovado pelo gestor",
-            tipo: "success",
-            lida: false,
-            data_criacao: "2023-06-01T10:00:00",
-            link: "/eventos/1"
-          },
-          {
-            id: 2,
-            usuario_cpf: 12345678900,
-            titulo: "Novo evento pendente",
-            mensagem: "Você tem um novo evento aguardando aprovação",
-            tipo: "info",
-            lida: false,
-            data_criacao: "2023-06-02T14:30:00",
-            link: "/aprovacoes"
-          },
-          {
-            id: 3,
-            usuario_cpf: 12345678900,
-            titulo: "Evento rejeitado",
-            mensagem: "Seu evento de folga foi rejeitado",
-            tipo: "error",
-            lida: true,
-            data_criacao: "2023-05-28T09:15:00",
-            link: "/eventos/3"
-          }
-        ] as any,
-      }
-    }
-
-    if (endpoint.match(/\/api\/notificacoes\/\d+\/lida/) && options.method === "PUT") {
-      return {
-        data: { status: "success" } as any,
-      }
-    }
-
-    if (endpoint === "/api/notificacoes/lidas" && options.method === "PUT") {
-      return {
-        data: { status: "success" } as any,
-      }
-    }
-
-    if (endpoint.match(/\/api\/notificacoes\/\d+/) && options.method === "DELETE") {
-      return {
-        data: { status: "success" } as any,
-      }
-    }
-
-    return {
-      error: "Endpoint não mockado ainda"
-    }
+    return { error: "Endpoint não mockado ainda" }
   }
 }
 
