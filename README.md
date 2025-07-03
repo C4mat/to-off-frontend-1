@@ -58,7 +58,7 @@ Para conectar à API real:
 1. Crie um arquivo `.env.local` na raiz do projeto (você pode copiar o arquivo `.env.local.example`)
 2. Defina a URL da API:
    ```
-   NEXT_PUBLIC_API_URL=http://127.0.0.1:5000
+   NEXT_PUBLIC_API_URL=https://tooff-api-552045197478.europe-west1.run.app
    ```
 3. Para usar a API real mesmo em ambiente de desenvolvimento:
    ```
