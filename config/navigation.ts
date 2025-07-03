@@ -5,16 +5,10 @@ import {
   Building2,
   UserCheck,
   ClipboardList,
-  Settings,
-  BarChart3,
-  FileText,
-  Clock,
-  MapPin,
   Briefcase,
   CalendarDays,
-  Shield,
   User,
-  UserPlus,
+  Palmtree,
 } from "lucide-react"
 import type { NavigationSection } from "@/types/navigation"
 
@@ -46,6 +40,11 @@ export const navigationConfig: NavigationSection[] = [
         name: "Solicitar Evento",
         href: "/eventos/novo",
         icon: CalendarDays,
+      },
+      {
+        name: "Férias",
+        href: "/ferias",
+        icon: Palmtree,
       },
       {
         name: "Aprovações",
@@ -99,39 +98,6 @@ export const navigationConfig: NavigationSection[] = [
         href: "/empresa",
         icon: Briefcase,
         requiredUserType: "rh",
-      },
-    ],
-  },
-  {
-    title: "Configurações",
-    items: [
-      {
-        name: "Config. Ausências",
-        href: "/configuracoes",
-        icon: Settings,
-        requiredUserType: "rh",
-      },
-    ],
-  },
-  {
-    title: "Relatórios",
-    items: [
-      {
-        name: "Relatórios",
-        href: "/relatorios",
-        icon: BarChart3,
-        requiredUserType: "rh",
-      },
-      {
-        name: "Integridade",
-        href: "/relatorios/integridade",
-        icon: Shield,
-        requiredUserType: "rh",
-      },
-      {
-        name: "Férias",
-        href: "/relatorios/ferias",
-        icon: FileText,
       },
     ],
   },

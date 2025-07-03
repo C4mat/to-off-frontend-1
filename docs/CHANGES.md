@@ -42,6 +42,42 @@ async getUFs(): Promise<ApiResponse<UF[]>> {
 // - createTipoAusencia()
 ```
 
+### 3. Correção do Formulário de Criação de Eventos
+
+Implementamos várias correções para resolver problemas na funcionalidade de criação de eventos no formulário `app/eventos/novo/page.tsx`.
+
+#### Problemas Identificados:
+1. Incompatibilidade entre os formatos de dados esperados pelo frontend e retornados pela API para tipos de ausência
+2. Inconsistência de nomenclatura entre o campo `UF` (frontend) e `uf` (API)
+3. Erros ao tentar exibir tipos de ausência vazios ou indefinidos
+4. Erro 400 Bad Request ao enviar dados para criação de eventos
+
+#### Arquivos Modificados:
+- `app/eventos/novo/page.tsx`:
+  - Adicionada verificação para tratar arrays vazios e valores indefinidos
+  - Implementada adaptação dos dados retornados pela API de tipos de ausência
+  - Corrigida a nomenclatura do campo `UF` para `uf` nas requisições à API
+  - Melhorada a segurança do componente com verificações de tipo
+  - Implementado tratamento de erro com mensagens informativas
+
+```typescript
+// Conversão dos campos da API para o formato esperado pelo frontend
+const tiposConvertidos = tiposResponse.data.map((tipo: any) => ({
+  id_tipo_ausencia: tipo.id || tipo.id_tipo_ausencia || 0,
+  descricao_ausencia: tipo.descricao || tipo.descricao_ausencia || "Sem descrição",
+  usa_turno: tipo.usa_turno || false
+}));
+
+// Correção do campo UF para uf nas requisições
+const eventoData: any = {
+  cpf_usuario: cpfUsuario,
+  data_inicio: dataInicio,
+  data_fim: dataFim,
+  id_tipo_ausencia: tipoAusencia,
+  uf: uf // Campo em minúsculo conforme esperado pela API
+};
+```
+
 ## Justificativa das Alterações
 
 ### Sistema de Notificações
@@ -58,18 +94,33 @@ A adição da barra final (/) aos endpoints foi necessária porque:
 2. As requisições sem a barra final resultavam em redirecionamentos 308 (Permanent Redirect)
 3. Estes redirecionamentos estavam causando problemas na autenticação e nas requisições
 
+### Correção do Formulário de Eventos
+
+As alterações no formulário de eventos foram necessárias porque:
+1. A API retorna dados em um formato diferente do esperado pelo frontend (`id` vs `id_tipo_ausencia`, `descricao` vs `descricao_ausencia`)
+2. A API espera receber o campo `uf` em minúsculo, enquanto a interface do frontend usa `UF` maiúsculo
+3. Eram necessárias validações adicionais para evitar erros ao lidar com dados ausentes ou malformados
+
 ## Impacto das Alterações
 
 ### Impacto Funcional
 - Remoção do sistema de notificações: Não há impacto funcional, pois o recurso não estava funcionando por falta de endpoints
 - Correção de endpoints: Melhora na estabilidade e confiabilidade das requisições à API
+- Correção do formulário de eventos: Permite visualizar e selecionar corretamente os tipos de ausência e criar eventos (com algumas limitações devido a erros no backend)
 
 ### Impacto Visual
 - Remoção do ícone de notificações do cabeçalho
 - Remoção do item "Notificações" do menu lateral
+- Exibição correta dos tipos de ausência no formulário de eventos
+
+## Problemas Pendentes
+
+1. **Erro interno no servidor (500)**: Ao criar um evento, ocorre um erro no backend onde a função `criar_evento()` está faltando o parâmetro obrigatório `session`. Este erro precisa ser resolvido no lado do servidor.
 
 ## Próximos Passos Recomendados
 
 1. Atualizar a documentação do projeto (README.md) para remover as referências ao sistema de notificações
 2. Considerar a implementação de um sistema de notificações no backend e frontend no futuro, se necessário
-3. Padronizar todos os endpoints da API para seguir a mesma convenção (com ou sem barra final) 
+3. Padronizar todos os endpoints da API para seguir a mesma convenção (com ou sem barra final)
+4. Corrigir o erro de session no backend para permitir a criação de eventos
+5. Alinhar as interfaces de tipo do frontend com o formato real dos dados da API para evitar conversões manuais 
