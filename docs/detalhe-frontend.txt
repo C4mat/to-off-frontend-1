@@ -1,3 +1,0 @@
-Frontend criado para conecetar com API FLASK que funciona na porta:http://127.0.0.1:5000 
-
-nome do sistema: To Off
