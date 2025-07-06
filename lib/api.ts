@@ -405,45 +405,45 @@ class ApiClient {
   }
 
   async getUFs(): Promise<ApiResponse<UF[]>> {
-    return this.request<UF[]>("/api/ufs")
+    return this.request<UF[]>("/api/ufs/")
   }
 
   async getUF(uf: string): Promise<ApiResponse<UF>> {
-    return this.request<UF>(`/api/ufs/${uf}`)
+    return this.request<UF>(`/api/ufs/${uf}/`)
   }
 
   async createUF(data: UF): Promise<ApiResponse<UF>> {
-    return this.request<UF>("/api/ufs", {
+    return this.request<UF>("/api/ufs/", {
       method: "POST",
       body: JSON.stringify(data),
     })
   }
 
   async getTiposAusencia(): Promise<ApiResponse<TipoAusencia[]>> {
-    return this.request<TipoAusencia[]>("/api/tipos-ausencia")
+    return this.request<TipoAusencia[]>("/api/tipos-ausencia/")
   }
 
   async getTipoAusencia(id: number): Promise<ApiResponse<TipoAusencia>> {
-    return this.request<TipoAusencia>(`/api/tipos-ausencia/${id}`)
+    return this.request<TipoAusencia>(`/api/tipos-ausencia/${id}/`)
   }
 
   async createTipoAusencia(data: Partial<TipoAusencia>): Promise<ApiResponse<TipoAusencia>> {
-    return this.request<TipoAusencia>("/api/tipos-ausencia", {
+    return this.request<TipoAusencia>("/api/tipos-ausencia/", {
       method: "POST",
       body: JSON.stringify(data),
     })
   }
 
   async getTurnos(): Promise<ApiResponse<Turno[]>> {
-    return this.request<Turno[]>("/api/turnos")
+    return this.request<Turno[]>("/api/turnos/")
   }
 
   async getTurno(id: number): Promise<ApiResponse<Turno>> {
-    return this.request<Turno>(`/api/turnos/${id}`)
+    return this.request<Turno>(`/api/turnos/${id}/`)
   }
 
   async createTurno(data: Partial<Turno>): Promise<ApiResponse<Turno>> {
-    return this.request<Turno>("/api/turnos", {
+    return this.request<Turno>("/api/turnos/", {
       method: "POST",
       body: JSON.stringify(data),
     })
@@ -452,13 +452,50 @@ class ApiClient {
   async getFeriadosNacionais(uf?: string): Promise<ApiResponse<Feriado[]>> {
     let endpoint = "/api/feriados/nacionais"
     if (uf) endpoint += `?uf=${uf}`
-    return this.request<Feriado[]>(endpoint)
+    
+    console.log("Buscando feriados nacionais no endpoint:", endpoint)
+    
+    try {
+      const response = await this.request<Feriado[]>(endpoint)
+      
+      // Caso não consiga obter os feriados, retornar um array vazio em vez de erro
+      if (response.error) {
+        console.error("Erro ao buscar feriados nacionais:", response.error)
+        return { data: [] }
+      }
+      
+      return response
+    } catch (error) {
+      console.error("Exceção ao buscar feriados nacionais:", error)
+      return { data: [] }
+    }
   }
 
   async getFeriadosEstaduais(uf?: string): Promise<ApiResponse<Feriado[]>> {
+    if (!uf) {
+      console.warn("UF não informada para busca de feriados estaduais")
+      return { data: [] }
+    }
+    
     let endpoint = "/api/feriados/estaduais"
     if (uf) endpoint += `?uf=${uf}`
-    return this.request<Feriado[]>(endpoint)
+    
+    console.log("Buscando feriados estaduais no endpoint:", endpoint)
+    
+    try {
+      const response = await this.request<Feriado[]>(endpoint)
+      
+      // Caso não consiga obter os feriados, retornar um array vazio em vez de erro
+      if (response.error) {
+        console.error("Erro ao buscar feriados estaduais:", response.error)
+        return { data: [] }
+      }
+      
+      return response
+    } catch (error) {
+      console.error("Exceção ao buscar feriados estaduais:", error)
+      return { data: [] }
+    }
   }
 
   async createFeriadoNacional(data: Feriado): Promise<ApiResponse<Feriado>> {

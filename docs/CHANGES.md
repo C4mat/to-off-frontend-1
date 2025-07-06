@@ -78,6 +78,65 @@ const eventoData: any = {
 };
 ```
 
+## Correção e Simplificação do Sistema de Calendário
+
+Implementamos diversas melhorias para resolver problemas na funcionalidade do calendário e na comunicação com a API.
+
+### 1. Correção dos Endpoints de API
+
+Corrigimos os endpoints para respeitar a forma como as rotas são definidas no backend Flask:
+
+- **Adição de barra final** nos endpoints que exigem barra final:
+  - `/api/ufs/` (com barra final)
+  - `/api/tipos-ausencia/` (com barra final)
+  - `/api/turnos/` (com barra final)
+
+- **Remoção de barra final** nos endpoints que não aceitam barra final:
+  - `/api/feriados/nacionais` (sem barra final)
+  - `/api/feriados/estaduais` (sem barra final)
+  - `/api/calendario` (sem barra final)
+  - `/api/calendario/grupo/:id` (sem barra final)
+  - `/api/validation/integrity-check` (sem barra final)
+
+### 2. Reconstrução do Componente de Calendário
+
+Recriamos completamente o componente `app/calendario/calendario-component.tsx` para ser mais simples e robusto:
+
+- **Código mais simplificado e organizado**, facilitando a manutenção
+- **Tratamento melhorado de erros** com exibição de mensagens amigáveis
+- **Compatibilidade com múltiplos formatos de resposta da API**:
+  - Suporte a diferentes campos para cores (`color`, `backgroundColor`)
+  - Melhor tratamento de datas
+  - Fallbacks para campos ausentes
+- **Interface simplificada e intuitiva**:
+  - Controles claros para navegação
+  - Filtros para visualizar apenas eventos aprovados
+  - Múltiplas visualizações (mês/semana/dia)
+- **Melhor tratamento de feriados**:
+  - Resolvido problema com parâmetro UF em feriados nacionais
+  - Diferenciação visual entre feriados nacionais e estaduais
+
+### 3. Melhorias na Depuração
+
+- Adicionados logs detalhados para rastreamento de problemas
+- Mensagens de erro mais claras e específicas
+- Verificação adicional dos dados recebidos da API
+
+### Justificativa das Alterações
+
+Estas alterações foram necessárias porque:
+
+1. **Incompatibilidade entre rotas**: O Flask exige que as URLs sejam acessadas exatamente como definidas, sem redirecionamentos automáticos
+2. **Formato de dados inconsistente**: O backend retornava dados em um formato diferente do esperado pelo frontend
+3. **Tratamento inadequado de erros**: Erros na comunicação com a API não eram exibidos adequadamente para o usuário
+4. **Código excessivamente complexo**: A implementação anterior era difícil de entender e manter
+
+### Impacto das Alterações
+
+- **Funcional**: Agora os eventos criados pelo usuário são exibidos corretamente no calendário
+- **Visual**: Interface mais limpa e feedback visual sobre erros
+- **Manutenção**: Código mais simples e fácil de entender para a equipe
+
 ## Justificativa das Alterações
 
 ### Sistema de Notificações

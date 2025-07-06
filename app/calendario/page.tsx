@@ -1,32 +1,35 @@
 "use client"
 
-import React from 'react'
 import { RouteGuard } from "@/components/auth/route-guard"
 import { AppLayout } from "@/components/layout/app-layout"
-import dynamic from 'next/dynamic'
-
-// Importar o componente de calendário dinamicamente para evitar problemas de SSR
-const CalendarioComponent = dynamic(
-  () => import('./calendario-component'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="h-[600px] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Carregando calendário...</p>
-        </div>
-      </div>
-    )
-  }
-)
+import { useAuth } from "@/contexts/auth-context"
+import CalendarioComponent from "./calendario-component"
+import { Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function CalendarioPage() {
+  const { user } = useAuth()
+
   return (
     <RouteGuard>
-      <AppLayout title="Calendário" subtitle="Visualize eventos e feriados">
-        <CalendarioComponent />
+      <AppLayout 
+        title="Calendário" 
+        subtitle="Visualize eventos, férias e ausências no calendário"
+      >
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button asChild>
+              <Link href="/eventos/novo">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Evento
+              </Link>
+            </Button>
+          </div>
+          
+          <CalendarioComponent />
+        </div>
       </AppLayout>
     </RouteGuard>
   )
-}
+} 

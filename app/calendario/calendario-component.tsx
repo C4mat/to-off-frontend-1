@@ -2,33 +2,22 @@
 
 import React, { useState, useEffect } from "react"
 import { Calendar, momentLocalizer, Views } from "react-big-calendar"
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import moment from "moment"
 import "moment/locale/pt-br"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import "react-big-calendar/lib/css/react-big-calendar.css"
+
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { EventoCalendario, Feriado, apiClient } from "@/lib/api"
-import { useAuth } from "@/contexts/auth-context"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import "react-big-calendar/lib/css/react-big-calendar.css"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { apiClient } from "@/lib/api"
+import { useAuth } from "@/contexts/auth-context"
+import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react"
 
-// Configurar o localizador para o calendário
+// Configurar localização para português
 moment.locale("pt-br")
 const localizer = momentLocalizer(moment)
-
-// Cores do tema
-const COLORS = {
-  primary: "#e3d0cf",
-  secondary: "#7c3c3c",
-  accent: "#a05c5c",
-  highlight: "#c99393",
-  text: "#333333",
-  background: "#ffffff",
-  border: "#e2e8f0",
-}
 
 // Mensagens em português
 const messages = {
@@ -38,7 +27,7 @@ const messages = {
   month: "mês",
   week: "semana",
   day: "dia",
-  agenda: "lista",
+  agenda: "agenda",
   date: "data",
   time: "hora",
   event: "evento",
@@ -46,139 +35,208 @@ const messages = {
   noEventsInRange: "Nenhum evento neste período",
 }
 
-// Componente para renderizar um evento no calendário
-const EventComponent = ({ event }) => {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div 
-            className="text-white p-1 rounded truncate cursor-pointer text-xs"
-            style={{ 
-              backgroundColor: event.color || COLORS.accent,
-              height: "100%",
-              display: "flex",
-              alignItems: "center"
-            }}
-          >
-            {event.title}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="text-sm">
-            <p className="font-bold">{event.title}</p>
-            <p>{format(event.start, 'dd/MM/yyyy HH:mm')}</p>
-            <p>Status: {event.extendedProps?.status || "N/A"}</p>
-            {event.extendedProps?.usuario_nome && (
-              <p>Usuário: {event.extendedProps.usuario_nome}</p>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
+// Cores para diferentes tipos de eventos
+const COLORS = {
+  aprovado: "#4CAF50",    // Verde
+  pendente: "#FFC107",    // Amarelo
+  rejeitado: "#F44336",   // Vermelho
+  feriado_nacional: "#E53935", // Vermelho escuro
+  feriado_estadual: "#FB8C00", // Laranja
+  ferias: "#4CAF50",      // Verde
+  assiduidade: "#FF9800", // Laranja
+  plantao: "#2196F3",     // Azul
+  licenca_maternidade: "#E91E63", // Rosa
+  licenca_paternidade: "#E91E63", // Rosa
+  evento_especial: "#9C27B0", // Roxo
+  licenca_geral: "#607D8B", // Cinza
+  outros: "#795548",      // Marrom
 }
 
 export default function CalendarioComponent() {
   const { user } = useAuth()
   
-  const [currentDate, setCurrentDate] = useState<Date>(new Date())
-  const [eventos, setEventos] = useState<any[]>([])
-  const [feriadosNacionais, setFeriadosNacionais] = useState<Feriado[]>([])
-  const [feriadosEstaduais, setFeriadosEstaduais] = useState<Feriado[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const [events, setEvents] = useState<any[]>([])
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"todos" | "aprovados">("todos")
-  const [viewType, setViewType] = useState<string>(Views.MONTH)
+  const [viewType, setViewType] = useState(Views.MONTH)
   
-  // Carregar dados do calendário
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCalendarData = async () => {
       setLoading(true)
+      setError(null)
+      
       try {
-        // Carregar eventos
+        // 1. Buscar eventos do calendário
         const apenasAprovados = viewMode === "aprovados"
-        const eventosResponse = await apiClient.getCalendario(apenasAprovados)
-        if (eventosResponse.data) {
-          // Converter eventos para o formato do react-big-calendar
-          const formattedEvents = eventosResponse.data.map(evento => ({
-            id: evento.id,
-            title: evento.title,
-            start: parseISO(evento.start),
-            end: parseISO(evento.end),
-            color: evento.color || COLORS.accent,
-            extendedProps: evento.extendedProps
-          }))
-          setEventos(formattedEvents)
+        let eventosResponse;
+        
+        console.log("Buscando eventos para usuário:", user?.tipo_usuario, user?.flag_gestor, user?.grupo_id)
+        
+        if (user?.tipo_usuario === "rh") {
+          // RH vê todos os eventos
+          eventosResponse = await apiClient.getCalendario(apenasAprovados)
+        } else if (user?.flag_gestor === "S" && user?.grupo_id) {
+          // Gestores veem eventos de seu grupo
+          eventosResponse = await apiClient.getCalendarioGrupo(user.grupo_id, apenasAprovados)
+        } else {
+          // Usuários comuns veem apenas seus próprios eventos
+          eventosResponse = await apiClient.getCalendario(apenasAprovados)
         }
         
-        // Carregar feriados nacionais
+        console.log("Resposta eventos:", eventosResponse)
+        
+        if (eventosResponse.error) {
+          throw new Error(`Erro ao buscar eventos: ${eventosResponse.error}`)
+        }
+        
+        // Processar eventos do calendário
+        let eventosCalendario: any[] = []
+        
+        // A API pode retornar eventos diretamente ou dentro de uma propriedade 'eventos'
+        const eventosData = Array.isArray(eventosResponse.data) 
+          ? eventosResponse.data 
+          : (eventosResponse.data?.eventos || [])
+        
+        console.log("Dados dos eventos:", eventosData)
+        
+        if (eventosData && eventosData.length > 0) {
+          eventosCalendario = eventosData.map(formatEvent)
+        }
+        
+        // 2. Buscar feriados nacionais
+        console.log("Buscando feriados nacionais")
         const feriadosNacionaisResponse = await apiClient.getFeriadosNacionais()
-        if (feriadosNacionaisResponse.data) {
-          setFeriadosNacionais(feriadosNacionaisResponse.data)
+        console.log("Resposta feriados nacionais:", feriadosNacionaisResponse)
+        
+        if (!feriadosNacionaisResponse.error && Array.isArray(feriadosNacionaisResponse.data)) {
+          const feriadosNacionais = feriadosNacionaisResponse.data.map(feriado => 
+            formatFeriado(feriado, true)
+          )
           
-          // Adicionar feriados nacionais como eventos
-          if (feriadosNacionaisResponse.data.length > 0) {
-            const feriadosEvents = feriadosNacionaisResponse.data.map(feriado => {
-              const feriadoDate = parseISO(feriado.data_feriado)
-              return {
-                id: `feriado-nacional-${feriado.data_feriado}`,
-                title: `Feriado: ${feriado.descricao_feriado}`,
-                start: feriadoDate,
-                end: feriadoDate,
-                allDay: true,
-                color: "#ef4444", // Vermelho para feriados
-                extendedProps: {
-                  tipo: "feriado",
-                  descricao: feriado.descricao_feriado,
-                  uf: "Nacional"
-                }
-              }
-            })
+          eventosCalendario = [...eventosCalendario, ...feriadosNacionais]
+        }
+        
+        // 3. Buscar feriados estaduais se o usuário tiver UF
+        if (user?.UF) {
+          console.log("Buscando feriados estaduais para UF:", user.UF)
+          const feriadosEstaduaisResponse = await apiClient.getFeriadosEstaduais(user.UF)
+          console.log("Resposta feriados estaduais:", feriadosEstaduaisResponse)
+          
+          if (!feriadosEstaduaisResponse.error && Array.isArray(feriadosEstaduaisResponse.data)) {
+            const feriadosEstaduais = feriadosEstaduaisResponse.data.map(feriado => 
+              formatFeriado(feriado, false)
+            )
             
-            setEventos(prev => [...prev, ...feriadosEvents])
+            eventosCalendario = [...eventosCalendario, ...feriadosEstaduais]
           }
         }
         
-        // Carregar feriados estaduais do usuário
-        if (user?.UF) {
-          const feriadosEstaduaisResponse = await apiClient.getFeriadosEstaduais(user.UF)
-          if (feriadosEstaduaisResponse.data) {
-            setFeriadosEstaduais(feriadosEstaduaisResponse.data)
-            
-            // Adicionar feriados estaduais como eventos
-            if (feriadosEstaduaisResponse.data.length > 0) {
-              const feriadosEvents = feriadosEstaduaisResponse.data.map(feriado => {
-                const feriadoDate = parseISO(feriado.data_feriado)
-                return {
-                  id: `feriado-estadual-${feriado.data_feriado}`,
-                  title: `Feriado ${feriado.uf}: ${feriado.descricao_feriado}`,
-                  start: feriadoDate,
-                  end: feriadoDate,
-                  allDay: true,
-                  color: "#f97316", // Laranja para feriados estaduais
-                  extendedProps: {
-                    tipo: "feriado",
-                    descricao: feriado.descricao_feriado,
-                    uf: feriado.uf
-                  }
-                }
-              })
-              
-              setEventos(prev => [...prev, ...feriadosEvents])
-            }
-          }
-        }
+        console.log("Eventos formatados para calendário:", eventosCalendario)
+        setEvents(eventosCalendario)
       } catch (error) {
-        console.error("Erro ao carregar dados do calendário:", error)
+        console.error("Erro detalhado ao carregar dados do calendário:", error)
+        setError("Ocorreu um erro ao carregar o calendário. Por favor, tente novamente.")
       } finally {
         setLoading(false)
       }
     }
     
-    fetchData()
-  }, [viewMode, user?.UF])
+    fetchCalendarData()
+  }, [viewMode, user])
   
-  // Função para navegar entre datas
+  // Formatar evento para o calendário
+  const formatEvent = (evento: any) => {
+    console.log("Formatando evento:", evento)
+    
+    // Garantir que as datas são objetos Date
+    const start = new Date(evento.start)
+    let end = new Date(evento.end || evento.start)
+    
+    // Para eventos de dia inteiro, adicionar um dia ao final para visualização correta
+    if (evento.allDay !== false) {
+      end.setDate(end.getDate() + 1)
+    }
+    
+    // Determinar cor baseada no status ou tipo
+    let color = evento.color || evento.backgroundColor || COLORS.outros
+    
+    // Se tiver status, usar a cor do status
+    if (evento.extendedProps?.status && COLORS[evento.extendedProps.status as keyof typeof COLORS]) {
+      color = COLORS[evento.extendedProps.status as keyof typeof COLORS]
+    }
+    
+    // Criar um título significativo baseado nos dados disponíveis
+    const tipoAusencia = evento.extendedProps?.tipo_ausencia || '';
+    const usuarioNome = evento.extendedProps?.usuario_nome || '';
+    
+    // Verificar se já tem título no evento ou criar um baseado nos dados disponíveis
+    let title = evento.title;
+    if (!title || title === 'Desconhecido') {
+      if (tipoAusencia && usuarioNome) {
+        title = `${tipoAusencia} - ${usuarioNome}`;
+      } else if (tipoAusencia) {
+        title = tipoAusencia;
+      } else if (usuarioNome) {
+        title = `Evento - ${usuarioNome}`;
+      } else {
+        title = "Evento";
+      }
+    }
+    
+    // Se tiver tipo de ausência, verificar se tem uma cor específica
+    if (tipoAusencia) {
+      const tipoLower = tipoAusencia.toLowerCase()
+      
+      if (tipoLower.includes('féria')) color = COLORS.ferias
+      else if (tipoLower.includes('assidu')) color = COLORS.assiduidade
+      else if (tipoLower.includes('plant')) color = COLORS.plantao
+      else if (tipoLower.includes('matern')) color = COLORS.licenca_maternidade
+      else if (tipoLower.includes('patern')) color = COLORS.licenca_paternidade
+      else if (tipoLower.includes('licen')) color = COLORS.licenca_geral
+      else if (tipoLower.includes('espec')) color = COLORS.evento_especial
+    }
+    
+    return {
+      id: evento.id,
+      title: title,
+      start,
+      end,
+      allDay: true,
+      color,
+      extendedProps: evento.extendedProps || {}
+    }
+  }
+  
+  // Formatar feriado para o calendário
+  const formatFeriado = (feriado: any, isNacional: boolean) => {
+    console.log("Formatando feriado:", feriado)
+    
+    const dataFeriado = new Date(feriado.data_feriado)
+    const dataFimFeriado = new Date(feriado.data_feriado)
+    dataFimFeriado.setDate(dataFimFeriado.getDate() + 1) // Adicionar um dia para exibição correta
+    
+    const tipo = isNacional ? "feriado_nacional" : "feriado_estadual"
+    const prefix = isNacional ? "Nacional" : feriado.uf
+    
+    return {
+      id: `feriado-${tipo}-${feriado.data_feriado}`,
+      title: `Feriado ${prefix}: ${feriado.descricao_feriado}`,
+      start: dataFeriado,
+      end: dataFimFeriado,
+      allDay: true,
+      color: COLORS[tipo],
+      extendedProps: {
+        tipo: "feriado",
+        nacional: isNacional,
+        descricao: feriado.descricao_feriado,
+        uf: feriado.uf
+      }
+    }
+  }
+  
+  // Navegação entre datas
   const navigate = (direction: number) => {
     const newDate = new Date(currentDate)
     
@@ -192,200 +250,199 @@ export default function CalendarioComponent() {
       case Views.DAY:
         newDate.setDate(newDate.getDate() + direction)
         break
-      case Views.AGENDA:
+      default:
         newDate.setMonth(newDate.getMonth() + direction)
-        break
     }
     
     setCurrentDate(newDate)
   }
   
-  // Função para ir para hoje
-  const goToToday = () => {
-    setCurrentDate(new Date())
+  // Voltar para hoje
+  const goToToday = () => setCurrentDate(new Date())
+  
+  // Formatar título do período atual
+  const formatViewTitle = () => {
+    switch (viewType) {
+      case Views.MONTH:
+        return moment(currentDate).format('MMMM YYYY')
+      case Views.WEEK:
+        const startOfWeek = moment(currentDate).startOf('week')
+        const endOfWeek = moment(currentDate).endOf('week')
+        return `${startOfWeek.format('DD')} - ${endOfWeek.format('DD')} ${endOfWeek.format('MMMM YYYY')}`
+      case Views.DAY:
+        return moment(currentDate).format('DD MMMM YYYY')
+      default:
+        return moment(currentDate).format('MMMM YYYY')
+    }
   }
   
-  // Função para formatar cabeçalhos
-  const formats = {
-    monthHeaderFormat: (date) => format(date, 'MMMM yyyy', { locale: ptBR }),
-    dayHeaderFormat: (date) => format(date, 'dd MMMM yyyy', { locale: ptBR }),
-    dayRangeHeaderFormat: ({ start, end }) => 
-      `${format(start, 'dd', { locale: ptBR })} - ${format(end, 'dd MMMM yyyy', { locale: ptBR })}`
-  }
-  
-  // Estilização customizada para o calendário
-  const calendarStyle = {
-    height: 600,
-    backgroundColor: "#fff",
-    borderRadius: "0.5rem",
-    border: "1px solid #e2e8f0",
-    padding: "0.5rem",
-  }
+  // Componente de evento personalizado com tooltip
+  const EventComponent = ({ event }: { event: any }) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div 
+            className="text-xs truncate text-white px-1 py-0.5 rounded"
+            style={{ backgroundColor: event.color }}
+          >
+            {event.title}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="text-sm p-1 space-y-1">
+            <p className="font-semibold">{event.title}</p>
+            <p>Data: {moment(event.start).format('DD/MM/YYYY')}</p>
+            {event.extendedProps?.status && (
+              <p>Status: {event.extendedProps.status}</p>
+            )}
+            {event.extendedProps?.tipo_ausencia && (
+              <p>Tipo: {event.extendedProps.tipo_ausencia}</p>
+            )}
+            {event.extendedProps?.total_dias && (
+              <p>Total de dias: {event.extendedProps.total_dias}</p>
+            )}
+            {event.extendedProps?.usuario_nome && (
+              <p>Usuário: {event.extendedProps.usuario_nome}</p>
+            )}
+            {event.extendedProps?.aprovado_por_nome && (
+              <p>Aprovado por: {event.extendedProps.aprovado_por_nome}</p>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
   
   return (
-    <div className="space-y-4">
-      {/* Controles do Calendário */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <CardTitle>Calendário de Eventos</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Tabs 
-                defaultValue="todos" 
-                value={viewMode} 
-                onValueChange={(value) => setViewMode(value as "todos" | "aprovados")}
-              >
-                <TabsList>
-                  <TabsTrigger value="todos">Todos os Eventos</TabsTrigger>
-                  <TabsTrigger value="aprovados">Apenas Aprovados</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigate(-1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={goToToday}
-              >
-                hoje
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigate(1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              
-              <h3 className="text-lg font-medium ml-2">
-                {viewType === Views.MONTH && format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-                {viewType === Views.WEEK && `${format(startOfWeek(currentDate), 'dd')} - ${format(endOfWeek(currentDate), 'dd MMM yyyy', { locale: ptBR })}`}
-                {viewType === Views.DAY && format(currentDate, 'dd MMMM yyyy', { locale: ptBR })}
-                {viewType === Views.AGENDA && format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-              </h3>
-            </div>
+    <Card className="shadow-md">
+      <CardContent className="p-6">
+        {/* Controles superiores */}
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-y-4">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate(-1)}
+              title="Anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
             
-            <div className="flex items-center">
-              <Tabs 
-                defaultValue={Views.MONTH} 
-                value={viewType} 
-                onValueChange={(value) => setViewType(value)}
-              >
-                <TabsList>
-                  <TabsTrigger value={Views.MONTH}>mês</TabsTrigger>
-                  <TabsTrigger value={Views.WEEK}>semana</TabsTrigger>
-                  <TabsTrigger value={Views.DAY}>dia</TabsTrigger>
-                  <TabsTrigger value={Views.AGENDA}>lista</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+            <Button
+              variant="outline"
+              onClick={goToToday}
+            >
+              hoje
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate(1)}
+              title="Próximo"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            
+            <span className="font-medium ml-2">
+              {formatViewTitle()}
+            </span>
           </div>
           
-          {/* Calendário */}
-          {loading ? (
-            <div className="h-[600px] flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                <p className="mt-2">Carregando calendário...</p>
-              </div>
+          <div className="flex flex-wrap gap-4">
+            {/* Filtro: todos/aprovados */}
+            <Tabs 
+              value={viewMode} 
+              onValueChange={(value) => setViewMode(value as "todos" | "aprovados")}
+            >
+              <TabsList>
+                <TabsTrigger value="todos">Todos os Eventos</TabsTrigger>
+                <TabsTrigger value="aprovados">Apenas Aprovados</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            {/* Seleção de visualização */}
+            <Tabs 
+              value={viewType} 
+              onValueChange={(value) => setViewType(value)}
+            >
+              <TabsList>
+                <TabsTrigger value={Views.MONTH}>mês</TabsTrigger>
+                <TabsTrigger value={Views.WEEK}>semana</TabsTrigger>
+                <TabsTrigger value={Views.DAY}>dia</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </div>
+        
+        {/* Mensagem de erro */}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Calendário */}
+        {loading ? (
+          <div className="h-[600px] flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-2">Carregando calendário...</p>
             </div>
-          ) : (
-            <div className="calendar-container" style={{ height: '600px' }}>
-              <style jsx global>{`
-                .rbc-calendar {
-                  background-color: #fff;
-                  border-radius: 0.5rem;
+          </div>
+        ) : (
+          <div className="h-[600px]">
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              messages={messages}
+              date={currentDate}
+              onNavigate={(date: Date) => setCurrentDate(date)}
+              view={viewType}
+              onView={(view: string) => setViewType(view)}
+              toolbar={false}
+              eventPropGetter={(event: any) => ({
+                style: {
+                  backgroundColor: event.color
                 }
-                .rbc-toolbar {
-                  display: none;
-                }
-                .rbc-header {
-                  padding: 8px 0;
-                  font-weight: 500;
-                  border-bottom: 1px solid #e2e8f0;
-                }
-                .rbc-today {
-                  background-color: #e3d0cf30;
-                }
-                .rbc-off-range-bg {
-                  background-color: #f8f9fa;
-                }
-                .rbc-event {
-                  background-color: transparent;
-                  border: none;
-                  padding: 0;
-                  margin: 0;
-                }
-                .rbc-event-content {
-                  height: 100%;
-                }
-                .rbc-row-segment {
-                  padding: 1px;
-                }
-                .rbc-show-more {
-                  color: #7c3c3c;
-                  font-size: 0.75rem;
-                  background-color: transparent;
-                }
-                .rbc-day-slot .rbc-event {
-                  border-radius: 4px;
-                }
-                .rbc-agenda-view table.rbc-agenda-table {
-                  border: none;
-                }
-                .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
-                  padding: 8px;
-                  border-bottom: 1px solid #e2e8f0;
-                }
-                .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
-                  padding: 8px;
-                  border-bottom: 1px solid #e2e8f0;
-                  font-weight: 500;
-                }
-              `}</style>
-              <Calendar
-                localizer={localizer}
-                events={eventos}
-                startAccessor="start"
-                endAccessor="end"
-                style={calendarStyle}
-                views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-                view={viewType}
-                onView={(view) => setViewType(view)}
-                date={currentDate}
-                onNavigate={(date) => setCurrentDate(date)}
-                messages={messages}
-                formats={formats}
-                components={{
-                  event: EventComponent,
-                }}
-                eventPropGetter={(event) => ({
-                  style: {
-                    backgroundColor: 'transparent',
-                  }
-                })}
-                dayPropGetter={(date) => ({
-                  style: {
-                    backgroundColor: isSameDay(date, new Date()) ? '#e3d0cf30' : undefined,
-                  }
-                })}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              })}
+              components={{
+                event: EventComponent
+              }}
+              popup
+            />
+          </div>
+        )}
+        
+        {/* Legenda */}
+        <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-2">
+          <div className="flex items-center">
+            <div className="w-3 h-3 mr-1 rounded" style={{ backgroundColor: COLORS.aprovado }}></div>
+            <span className="text-sm">Aprovado</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 mr-1 rounded" style={{ backgroundColor: COLORS.pendente }}></div>
+            <span className="text-sm">Pendente</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 mr-1 rounded" style={{ backgroundColor: COLORS.rejeitado }}></div>
+            <span className="text-sm">Rejeitado</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 mr-1 rounded" style={{ backgroundColor: COLORS.feriado_nacional }}></div>
+            <span className="text-sm">Feriado Nacional</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 mr-1 rounded" style={{ backgroundColor: COLORS.feriado_estadual }}></div>
+            <span className="text-sm">Feriado Estadual</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 } 
